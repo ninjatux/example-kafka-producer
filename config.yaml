@@ -1,0 +1,5 @@
+gin:
+  release_mode: "debug"
+server:
+  address: "127.0.0.1"
+  port: "9090"
