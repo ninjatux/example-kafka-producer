@@ -1,11 +1,14 @@
 package main
 
 import (
+	"io/ioutil"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
+
+	"github.com/Shopify/sarama"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -22,7 +25,7 @@ func getConfig() *viper.Viper {
 	err := config.ReadInConfig()
 	if err != nil {
 		log.Error("Error loading config")
-		log.Error(err)
+		panic(err)
 	}
 
 	return config
@@ -33,12 +36,39 @@ func setupRouter(config *viper.Viper) *gin.Engine {
 
 	r := gin.Default()
 
+	bootstrapServers := strings.Split(config.GetString("kafka.bootstrap_servers"), ",")
+	topic := config.GetString("kafka.topic")
+
+	producer, err := sarama.NewSyncProducer(bootstrapServers, nil)
+	if err != nil {
+		log.Error("Error creating the sync producer")
+		panic(err)
+	}
+
 	r.GET("/healthcheck", func(c *gin.Context) {
 		c.String(http.StatusOK, "ok")
 	})
 
 	r.POST("/produce", func(c *gin.Context) {
-		c.String(http.StatusOK, "ok")
+		jsonData, err := ioutil.ReadAll(c.Request.Body)
+
+		if err != nil {
+			log.Error("Error parsing JSON body")
+			c.String(http.StatusBadRequest, "can't parse JSON body")
+			return
+		}
+
+		message := sarama.ProducerMessage{Topic: topic, Value: sarama.StringEncoder(jsonData)}
+		partition, offset, err := producer.SendMessage(&message)
+
+		if err != nil {
+			log.Error("Error writing to Kafka")
+			log.Error(err)
+			c.String(http.StatusInternalServerError, "can't write to Kafka")
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"partition": partition, "offset": offset})
 	})
 
 	return r
@@ -47,7 +77,7 @@ func setupRouter(config *viper.Viper) *gin.Engine {
 func main() {
 	config := getConfig()
 
-	addr := config.Get("server.address").(string) + ":" + config.Get("server.port").(string)
+	addr := config.GetString("server.address") + ":" + config.GetString("server.port")
 	log.Info("Server addr: " + addr)
 
 	r := setupRouter(config)
@@ -55,6 +85,6 @@ func main() {
 
 	if err != nil {
 		log.Error("Error starting gin server")
-		log.Error(err)
+		panic(err)
 	}
 }
