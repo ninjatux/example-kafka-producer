@@ -19,6 +19,6 @@ jobs:
           DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
         run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
       - name: Docker build
-        run: docker build . -t ${{secrets.DOCKER_USER}}/example-kafka-producer:${{GITHUB_SHA}}
+        run: docker build . -t ${{secrets.DOCKER_USER}}/example-kafka-producer:$GITHUB_SHA
       - name: Docker push tag
-        run: docker push ${{secrets.DOCKER_USER}}/example-kafka-producer:${{GITHUB_SHA}}
+        run: docker push ${{secrets.DOCKER_USER}}/example-kafka-producer:$GITHUB_SHA
