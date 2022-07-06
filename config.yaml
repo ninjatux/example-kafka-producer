@@ -2,7 +2,7 @@ gin:
   release_mode: "debug"
 server:
   address: "127.0.0.1"
-  port: "9090"
+  port: "8080"
 kafka:
   bootstrap_servers: 127.0.0.1:9092
   topic: kafka-example

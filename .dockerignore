@@ -1,0 +1,8 @@
+.gitignore
+.github
+.git
+.pre-commit-config.yaml
+docker-compose.yaml
+Dockerfile
+LICENSE
+README.md
